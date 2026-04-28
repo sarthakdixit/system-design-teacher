@@ -1,0 +1,74 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.python-version
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# uv
+.uv/
+
+# ---- Node / Frontend ----
+node_modules/
+dist/
+build/
+.next/
+.cache/
+*.tsbuildinfo
+
+# Vite
+.vite/
+
+# ---- Environment & secrets ----
+# NEVER commit real env files. Only .env.example is tracked.
+.env
+.env.local
+.env.*.local
+.env.azure
+*.pem
+*.key
+
+# ---- Docker ----
+# Local docker volumes if mounted into repo
+docker-data/
+
+# ---- IDEs / Editors ----
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---- Logs & misc ----
+*.log
+logs/
+tmp/
+.tmp/
+
+# ---- OS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+ehthumbs.db

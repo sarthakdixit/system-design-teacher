@@ -1,0 +1,47 @@
+# Keep the Docker build context minimal — speeds up `docker build` and
+# avoids leaking host-only files into the image.
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments (we install fresh inside the image)
+.venv/
+venv/
+env/
+
+# ---- Env & secrets ----
+# Never copy real env files into images. Compose injects them at runtime.
+.env
+.env.local
+.env.*.local
+.env.azure
+
+# ---- Git / VCS ----
+.git/
+.gitignore
+.gitattributes
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- Build artifacts ----
+dist/
+build/
+
+# ---- Docs that don't belong in the image ----
+README.md
+*.md
+docs/

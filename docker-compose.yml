@@ -1,0 +1,110 @@
+# Local development stack for System Design Teacher.
+#
+# Usage:
+#   cp backend/.env.example backend/.env.local
+#   docker compose up
+#
+# Services:
+#   backend        FastAPI on :8000           (depends on mongo + redis)
+#   mongo          MongoDB 7 on :27017        (data persisted in named volume)
+#   mongo-express  Web UI on :8081            (browse the DB during dev)
+#   redis          Redis 7 on :6379           (cache + rate limiter)
+#
+# In Batch 5 we add an `azure` profile / separate compose for Azure parity testing.
+# In Batch 2 the frontend service joins this file.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sdt-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env.local
+    environment:
+      # These override .env.local when running inside compose, because the hostnames
+      # `mongo` and `redis` only resolve on the docker network — not on the host.
+      ENVIRONMENT: local
+      MONGO_URI: mongodb://mongo:27017
+      REDIS_URL: redis://redis:6379
+    volumes:
+      # Hot-reload: mount source so uvicorn --reload picks up changes without rebuild.
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sdt-net
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: sdt-mongo
+    ports:
+      # Host port remapped to 27018 to avoid conflict with a locally-installed
+      # MongoDB on the standard port. Inside the docker network the container
+      # still listens on 27017 (see MONGO_URI=mongodb://mongo:27017 above), so
+      # the backend is unaffected by this remap.
+      #
+      # To connect from your host machine (e.g., mongosh, MongoDB Compass):
+      #   mongodb://localhost:27018
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      # Requires `mongosh` which ships with the mongo:7 image.
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sdt-net
+    restart: unless-stopped
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: sdt-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: "27017"
+      # Default basic-auth for the web UI. Local dev only — never expose this anywhere.
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - sdt-net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: sdt-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sdt-net
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+    name: sdt-mongo-data
+
+networks:
+  sdt-net:
+    name: sdt-net
+    driver: bridge
