@@ -6,12 +6,19 @@
 #
 # Services:
 #   backend        FastAPI on :8000           (depends on mongo + redis)
-#   mongo          MongoDB 7 on :27017        (data persisted in named volume)
+#   mongo          MongoDB 7 on :27018->27017 (data persisted in named volume)
 #   mongo-express  Web UI on :8081            (browse the DB during dev)
 #   redis          Redis 7 on :6379           (cache + rate limiter)
 #
+# Frontend is NOT in compose — it runs directly on the host with `npm run dev`
+# from the frontend/ directory. See frontend/AGENT.md for details. Reasons:
+#   - Faster Vite HMR on the host file system (no docker bind-mount latency).
+#   - No need to add Node tooling to a Python image.
+#   - Simpler debugging in the browser devtools.
+# The CORS_ALLOWED_ORIGINS env var (in backend/.env.example) already includes
+# http://localhost:3000 so the host-run frontend can call the dockerized backend.
+#
 # In Batch 5 we add an `azure` profile / separate compose for Azure parity testing.
-# In Batch 2 the frontend service joins this file.
 
 services:
   backend:

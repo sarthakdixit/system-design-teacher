@@ -2,7 +2,7 @@
 
 This document describes the step-by-step workflow the AI assistant must follow when generating code for any batch, phase, or milestone of a project. It is **project-agnostic** — keep it in your repo root and reference it from your project's `AGENT.md` or equivalent.
 
-> **How to use this doc:** When starting a batch, tell the assistant: *"Generate Batch N following `CODEGEN-WORKFLOW.md`."* The assistant must then follow every step below in order.
+> **How to use this doc:** When starting a batch, tell the assistant: _"Generate Batch N following `CODEGEN-WORKFLOW.md`."_ The assistant must then follow every step below in order.
 
 ---
 
@@ -13,6 +13,62 @@ This document describes the step-by-step workflow the AI assistant must follow w
 3. **User reviews as we go.** After each file, the user can inspect it and course-correct before the next one.
 4. **Summary at the end.** After every file in the batch is generated, a summary explains what each file does and how they connect.
 5. **No silent assumptions.** If the assistant needs to decide something not specified, it pauses and asks before generating.
+6. **Code must be self-documenting.** No comments — see "Code style rules" below.
+
+---
+
+## Code style rules
+
+### No comments — code must be self-documenting
+
+Generated code must contain **no comments and no docstrings**. The code itself communicates intent through:
+
+- **Descriptive names.** `_check_port_health_safely` instead of `_safe_check` with a comment.
+- **Small functions.** A 5-line function doesn't need a comment explaining what it does — the body IS the explanation.
+- **Type hints on every parameter and return.** Types replace comments like `# expects a list of users`.
+- **Custom exception types.** `RateLimitExceeded` instead of raising `Exception` with a message.
+- **Named constants.** `MAX_DIAGRAM_NODES = 200` instead of a magic `200` with a comment.
+- **Pydantic Field constraints.** `Field(ge=0, le=10, description=...)` is a self-documenting validator (the `description` is metadata, not a comment).
+
+### Specifically, the assistant must NOT generate:
+
+- `#` comments anywhere — including section dividers, file-top headers, "why" explanations, "TODO"s.
+- Triple-quoted docstrings on modules, classes, methods, or functions.
+- Multi-line string blocks used as informal documentation.
+- Commented-out code under any circumstances.
+
+### What's allowed (these are NOT comments):
+
+- **Pydantic `Field(description="...")`** — runtime metadata that becomes part of OpenAPI schema.
+- **Logging events with descriptive event names** — `logger.info("user_login_succeeded", user_id=...)` documents intent.
+- **Test names** — `def test_health_deep_returns_503_when_database_unreachable():` is documentation through the function name.
+- **Markdown documentation files** (`README.md`, `ADR-*.md`, etc.) — those are docs, not code.
+
+### Naming conventions to absorb the burden
+
+When dropping comments, naming has to carry more weight. The assistant follows these:
+
+- **Booleans read as questions.** `is_authenticated`, `has_permission`, `should_retry` — never `auth_status`.
+- **Functions read as commands or questions.** `submit_design()`, `is_rate_limited()` — never `design_submission()`.
+- **Avoid abbreviations.** `request` not `req`, `database` not `db`, `authentication_token` not `token` _(unless the abbreviation is more common than the full word, like `id`, `url`, `http`)_.
+- **Use the domain language consistently.** A "user attempt" is `Attempt` everywhere — never `Submission`, `Try`, `Entry`.
+
+### Trade-offs the user should know
+
+- **FastAPI's `/docs`** uses docstrings to render endpoint descriptions. Without docstrings the auto-generated docs page still works but each endpoint shows only its name and parameters — no description text. The user accepts this trade-off when choosing "strict no comments."
+- **IDE hover tooltips** become signature-only. No "what does this do" popup.
+- **`Field(description=...)`** is the workaround for both: it shows up in `/docs` and is technically not a comment.
+
+### When the assistant feels the urge to add a comment
+
+That urge is a signal the code isn't clear enough yet. The fix is to:
+
+1. Rename a variable or function until the comment becomes redundant.
+2. Extract a helper function whose name is the comment.
+3. Replace a magic value with a named constant.
+4. Add a `Field(description=...)` if it's a Pydantic field.
+
+If, after all of those, the code still seems to need a comment — pause and ask the user. Don't sneak one in.
 
 ---
 
@@ -72,6 +128,7 @@ Along with the tree, the assistant provides:
 The assistant **waits for user confirmation** before generating any file.
 
 **Common user responses at this step:**
+
 - "Looks good, proceed."
 - "Move X under Y instead."
 - "Skip file Z for now."
@@ -111,12 +168,12 @@ After the final file is presented (or the user halts the batch), the assistant g
 
 A table or bulleted list covering every file generated:
 
-| # | File | Purpose | Key contents |
-|---|---|---|---|
-| 1 | `pyproject.toml` | Python project config | Dependencies, ruff/mypy config |
-| 2 | `app/core/ports/database.py` | Abstract DB interface | `Database` Protocol with CRUD methods |
-| 3 | `app/adapters/local/mongodb_database.py` | Local Mongo adapter | Implements `Database` using `motor` |
-| ... | ... | ... | ... |
+| #   | File                                     | Purpose               | Key contents                          |
+| --- | ---------------------------------------- | --------------------- | ------------------------------------- |
+| 1   | `pyproject.toml`                         | Python project config | Dependencies, ruff/mypy config        |
+| 2   | `app/core/ports/database.py`             | Abstract DB interface | `Database` Protocol with CRUD methods |
+| 3   | `app/adapters/local/mongodb_database.py` | Local Mongo adapter   | Implements `Database` using `motor`   |
+| ... | ...                                      | ...                   | ...                                   |
 
 #### 4b. How they connect
 
@@ -133,6 +190,7 @@ Explicitly list what was deferred to a future batch. Prevents user assumptions.
 #### 4e. Verification steps
 
 Concrete commands the user can run to verify the batch works. Example:
+
 ```bash
 docker compose up
 curl localhost:8000/health/deep   # expect 200 with all services "ok"
@@ -142,6 +200,7 @@ pytest tests/                     # expect all green
 #### 4f. Suggested next actions
 
 One of:
+
 - "Proceed to Batch N+1" (with a one-line preview)
 - "Pause to write ADR/docs for decisions made here"
 - "User action needed: provision X, sign up for Y, etc."
@@ -152,7 +211,7 @@ One of:
 
 The assistant ends the batch with an explicit handoff line:
 
-> **Batch N complete.** Files: A, B, C, D. Next up: Batch N+1 (*goal*). Ready when you are — type "start Batch N+1" to continue, or ask questions about anything generated above.
+> **Batch N complete.** Files: A, B, C, D. Next up: Batch N+1 (_goal_). Ready when you are — type "start Batch N+1" to continue, or ask questions about anything generated above.
 
 No more content after this line. The user drives the next step.
 
@@ -163,7 +222,7 @@ No more content after this line. The user drives the next step.
 To use this workflow, the user can say things like:
 
 - "Generate Batch 1 following `CODEGEN-WORKFLOW.md`."
-- "Start Batch 2." *(assumes the workflow is the default)*
+- "Start Batch 2." _(assumes the workflow is the default)_
 - "Continue to the next file."
 - "Regenerate file 3 but use Y instead of X."
 - "Skip to the summary; I'll read files myself."
@@ -175,13 +234,13 @@ To use this workflow, the user can say things like:
 
 At the start of a batch, the user can override defaults. The assistant must respect these for the entire batch:
 
-| Override | Example | Effect |
-|---|---|---|
-| **Batch mode** | "Generate all files without pausing" | Assistant skips the per-file pause in Step 3; still does Steps 1, 2, 4, 5 normally. |
-| **Abbreviated summary** | "Skip file-by-file summary" | Assistant does only 4c–4f, not 4a–4b. |
-| **No stubs** | "Every file must be production-ready" | Default behavior; stated for clarity. |
-| **Stubs allowed** | "Stubs OK for external adapters" | Assistant may mark specific files with `TODO` comments, flagged in the summary. |
-| **Different order** | "Generate tests first, then implementation" | Assistant re-orders Step 2's list before confirming. |
+| Override                | Example                                     | Effect                                                                              |
+| ----------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Batch mode**          | "Generate all files without pausing"        | Assistant skips the per-file pause in Step 3; still does Steps 1, 2, 4, 5 normally. |
+| **Abbreviated summary** | "Skip file-by-file summary"                 | Assistant does only 4c–4f, not 4a–4b.                                               |
+| **No stubs**            | "Every file must be production-ready"       | Default behavior; stated for clarity.                                               |
+| **Stubs allowed**       | "Stubs OK for external adapters"            | Assistant may mark specific files with `TODO` comments, flagged in the summary.     |
+| **Different order**     | "Generate tests first, then implementation" | Assistant re-orders Step 2's list before confirming.                                |
 
 ---
 
@@ -194,6 +253,9 @@ At the start of a batch, the user can override defaults. The assistant must resp
 5. **Reference files from future batches** in imports or comments without flagging it.
 6. **Proceed after a user pushback** without acknowledging the change and, if relevant, updating earlier files.
 7. **Produce a final summary that hides skipped or incomplete files.** Every generated, edited, and skipped file must be listed.
+8. **Add comments or docstrings to generated code.** See "Code style rules" above. If the code seems to need a comment, the code itself isn't clear enough.
+9. **Use comment-shaped section dividers** (`# ---- Section ----`) to organize a file. If a file needs multiple sections, it probably should be multiple files.
+10. **Convert comments into pseudo-comments** (e.g., putting explanatory text in a `print()` call, an unused string literal, or a docstring labeled "implementation note"). This violates the spirit of the rule.
 
 ---
 

@@ -9,11 +9,12 @@ from app.adapters.local.mock_auth import MockAuthProvider
 from app.adapters.local.mongodb_database import MongoDBDatabase
 from app.adapters.local.redis_cache import RedisCache
 from app.adapters.local.stub_llm import StubLLMProvider
+from app.core.services.auth_service import AuthService
 from app.core.services.health_service import HealthService
+from app.core.services.jwt_service import JWTService
 
 
 class Container(containers.DeclarativeContainer):
-
     config = providers.Configuration()
 
     auth_provider = providers.Singleton(MockAuthProvider)
@@ -39,6 +40,21 @@ class Container(containers.DeclarativeContainer):
     )
 
     secrets_provider = providers.Singleton(EnvSecretsProvider)
+
+    jwt_service = providers.Singleton(
+        JWTService,
+        secret=config.jwt.secret,
+        algorithm=config.jwt.algorithm,
+        expiry_hours=config.jwt.expiry_hours,
+    )
+
+    auth_service = providers.Factory(
+        AuthService,
+        auth_provider=auth_provider,
+        database=database,
+        jwt_service=jwt_service,
+        telemetry=telemetry,
+    )
 
     health_service = providers.Factory(
         HealthService,
