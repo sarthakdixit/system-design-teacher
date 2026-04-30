@@ -8,8 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import deps as auth_deps
 from app.api.exceptions import register_exception_handlers
+from app.api.routes import attempts as attempts_routes
 from app.api.routes import auth as auth_routes
 from app.api.routes import health as health_routes
+from app.api.routes import questions as questions_routes
+from app.api.routes import rate_limits as rate_limits_routes
 from app.config.container import Container
 from app.config.settings import Settings, get_settings
 
@@ -20,6 +23,8 @@ def _build_container(settings: Settings) -> Container:
         {
             "environment": settings.environment,
             "log_level": settings.log_level,
+            "openai_api_key": settings.openai_api_key,
+            "llm_provider": settings.effective_llm_provider,
             "mongo": {
                 "uri": settings.mongo.uri,
                 "db_name": settings.mongo.db_name,
@@ -32,9 +37,24 @@ def _build_container(settings: Settings) -> Container:
                 "algorithm": settings.jwt.algorithm,
                 "expiry_hours": settings.jwt.expiry_hours,
             },
+            "rate_limits": {
+                "rate_limit_situation_daily": settings.rate_limits.rate_limit_situation_daily,
+                "rate_limit_design_daily": settings.rate_limits.rate_limit_design_daily,
+                "global_cap_situation_daily": settings.rate_limits.global_cap_situation_daily,
+                "global_cap_design_daily": settings.rate_limits.global_cap_design_daily,
+            },
         }
     )
-    container.wire(modules=[health_routes, auth_routes, auth_deps])
+    container.wire(
+        modules=[
+            health_routes,
+            auth_routes,
+            auth_deps,
+            questions_routes,
+            attempts_routes,
+            rate_limits_routes,
+        ]
+    )
     return container
 
 
@@ -50,6 +70,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         "app_starting",
         environment=settings.environment,
         log_level=settings.log_level,
+        llm_provider=settings.effective_llm_provider,
     )
 
     database = container.database()
@@ -79,7 +100,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="System Design Teacher API",
-        version="0.2.0",
+        version="0.3.0",
         description=(
             "Backend for the System Design Teacher platform. "
             "See /health/deep for end-to-end dependency status."
@@ -99,6 +120,9 @@ def create_app() -> FastAPI:
 
     app.include_router(health_routes.router)
     app.include_router(auth_routes.router)
+    app.include_router(questions_routes.router)
+    app.include_router(attempts_routes.router)
+    app.include_router(rate_limits_routes.router)
 
     return app
 

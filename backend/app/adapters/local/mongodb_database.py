@@ -4,10 +4,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 from bson import ObjectId
+from bson.errors import InvalidId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo import ReturnDocument
+from pymongo import DESCENDING, ReturnDocument
 from pymongo.errors import DuplicateKeyError as PyMongoDuplicateKeyError
 
+from app.core.domain.attempt import Attempt, AttemptType, NewAttempt
+from app.core.domain.question import Difficulty, NewQuestion, Question, QuestionType
 from app.core.domain.user import NewUser, User
 from app.core.ports.database import (
     AttemptRepository,
@@ -24,6 +27,13 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _to_object_id(value: str) -> ObjectId:
+    try:
+        return ObjectId(value)
+    except (InvalidId, TypeError) as exc:
+        raise NotFoundError(f"Invalid id format: {value!r}") from exc
+
+
 def _doc_to_user(doc: dict[str, Any]) -> User:
     return User(
         id=str(doc["_id"]),
@@ -32,6 +42,32 @@ def _doc_to_user(doc: dict[str, Any]) -> User:
         display_name=doc["display_name"],
         created_at=doc["created_at"],
         last_login_at=doc["last_login_at"],
+    )
+
+
+def _doc_to_question(doc: dict[str, Any]) -> Question:
+    return Question(
+        id=str(doc["_id"]),
+        type=doc["type"],
+        title=doc["title"],
+        prompt=doc["prompt"],
+        category=doc["category"],
+        difficulty=doc["difficulty"],
+        reference_answer=doc.get("reference_answer"),
+        tags=doc.get("tags", []),
+        is_ai_generated=doc.get("is_ai_generated", False),
+        created_at=doc["created_at"],
+    )
+
+
+def _doc_to_attempt(doc: dict[str, Any]) -> Attempt:
+    return Attempt(
+        id=str(doc["_id"]),
+        user_id=doc["user_id"],
+        question_id=doc["question_id"],
+        type=doc["type"],
+        user_notes=doc.get("user_notes"),
+        created_at=doc["created_at"],
     )
 
 
@@ -88,6 +124,71 @@ class _MongoQuestionRepository:
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
         self._collection = db["questions"]
 
+    async def insert(self, new_question: NewQuestion) -> Question:
+        document = new_question.model_dump()
+        result = await self._collection.insert_one(document)
+        document["_id"] = result.inserted_id
+        return _doc_to_question(document)
+
+    async def get_by_id(self, question_id: str) -> Question:
+        oid = _to_object_id(question_id)
+        document = await self._collection.find_one({"_id": oid})
+        if document is None:
+            raise NotFoundError(f"No question with id={question_id!r}")
+        return _doc_to_question(document)
+
+    async def random_by_filter(
+        self,
+        *,
+        type: QuestionType,
+        category: str | None = None,
+        difficulty: Difficulty | None = None,
+    ) -> Question:
+        match: dict[str, Any] = {"type": type}
+        if category is not None:
+            match["category"] = category
+        if difficulty is not None:
+            match["difficulty"] = difficulty
+
+        pipeline: list[dict[str, Any]] = [
+            {"$match": match},
+            {"$sample": {"size": 1}},
+        ]
+        cursor = self._collection.aggregate(pipeline)
+        documents = await cursor.to_list(length=1)
+        if not documents:
+            raise NotFoundError(
+                f"No question matching type={type!r}, category={category!r}, difficulty={difficulty!r}"
+            )
+        return _doc_to_question(documents[0])
+
+    async def update_reference_answer(self, question_id: str, reference_answer: str) -> Question:
+        oid = _to_object_id(question_id)
+        document = await self._collection.find_one_and_update(
+            {"_id": oid},
+            {"$set": {"reference_answer": reference_answer}},
+            return_document=ReturnDocument.AFTER,
+        )
+        if document is None:
+            raise NotFoundError(f"No question with id={question_id!r}")
+        return _doc_to_question(document)
+
+    async def list_missing_reference_answer(self, type: QuestionType) -> list[Question]:
+        cursor = self._collection.find(
+            {
+                "type": type,
+                "$or": [
+                    {"reference_answer": {"$exists": False}},
+                    {"reference_answer": None},
+                ],
+            }
+        )
+        documents = await cursor.to_list(length=None)
+        return [_doc_to_question(doc) for doc in documents]
+
+    async def count(self) -> int:
+        return await self._collection.count_documents({})
+
     async def health_check(self) -> bool:
         try:
             await self._collection.estimated_document_count()
@@ -99,6 +200,44 @@ class _MongoQuestionRepository:
 class _MongoAttemptRepository:
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
         self._collection = db["attempts"]
+
+    async def insert(self, new_attempt: NewAttempt) -> Attempt:
+        document = new_attempt.model_dump()
+        result = await self._collection.insert_one(document)
+        document["_id"] = result.inserted_id
+        return _doc_to_attempt(document)
+
+    async def list_by_user(
+        self,
+        *,
+        user_id: str,
+        attempt_type: AttemptType | None = None,
+        limit: int = 20,
+        skip: int = 0,
+    ) -> list[Attempt]:
+        match: dict[str, Any] = {"user_id": user_id}
+        if attempt_type is not None:
+            match["type"] = attempt_type
+
+        cursor = (
+            self._collection.find(match)
+            .sort("created_at", DESCENDING)
+            .skip(skip)
+            .limit(limit)
+        )
+        documents = await cursor.to_list(length=limit)
+        return [_doc_to_attempt(doc) for doc in documents]
+
+    async def count_by_user(
+        self,
+        *,
+        user_id: str,
+        attempt_type: AttemptType | None = None,
+    ) -> int:
+        match: dict[str, Any] = {"user_id": user_id}
+        if attempt_type is not None:
+            match["type"] = attempt_type
+        return await self._collection.count_documents(match)
 
     async def health_check(self) -> bool:
         try:
@@ -137,6 +276,12 @@ class MongoDBDatabase:
         if self._indexes_ensured:
             return
         await self._db["users"].create_index("microsoft_oid", unique=True)
+        await self._db["questions"].create_index(
+            [("type", 1), ("difficulty", 1), ("category", 1)]
+        )
+        await self._db["attempts"].create_index(
+            [("user_id", 1), ("created_at", DESCENDING)]
+        )
         self._indexes_ensured = True
 
     @property
