@@ -25,6 +25,7 @@ def _build_container(settings: Settings) -> Container:
             "log_level": settings.log_level,
             "openai_api_key": settings.openai_api_key,
             "llm_provider": settings.effective_llm_provider,
+            "feedback_cache_ttl_days": settings.feedback_cache_ttl_days,
             "mongo": {
                 "uri": settings.mongo.uri,
                 "db_name": settings.mongo.db_name,
@@ -71,6 +72,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         environment=settings.environment,
         log_level=settings.log_level,
         llm_provider=settings.effective_llm_provider,
+        feedback_cache_ttl_days=settings.feedback_cache_ttl_days,
     )
 
     database = container.database()
@@ -100,7 +102,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="System Design Teacher API",
-        version="0.3.0",
+        version="0.4.0",
         description=(
             "Backend for the System Design Teacher platform. "
             "See /health/deep for end-to-end dependency status."

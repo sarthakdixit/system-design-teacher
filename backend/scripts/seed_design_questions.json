@@ -1,0 +1,72 @@
+[
+  {
+    "title": "Design Twitter's timeline service",
+    "prompt": "Design the backend service that serves a user's home timeline on Twitter (now X). The system has 500M monthly active users, 100M daily active users, and a typical user follows 200 accounts. Reads vastly outnumber writes (timeline views vs. tweet posts is roughly 1000:1). A user opening the app should see their timeline within 200ms p95. Tweets should appear in followers' timelines within seconds of being posted. Focus on the read path, the write path, and how you handle celebrities with 100M+ followers (the 'fanout problem').",
+    "category": "consumer-apps",
+    "difficulty": "senior",
+    "tags": ["fanout", "feed", "celebrity-problem", "read-heavy"]
+  },
+  {
+    "title": "Design a URL shortener (bit.ly style)",
+    "prompt": "Design a URL shortener that handles 100M shortened URLs and 1B redirects/day (~12k redirects/sec). Users paste a long URL, get back a short URL (e.g., short.ly/abc123). Anyone clicking the short URL gets redirected to the original. The redirect path must be fast (<50ms p95) and highly available. Address: how short codes are generated and avoid collisions, how the read path is optimized given redirects vastly outnumber creations, and how you handle a viral URL that suddenly gets millions of hits.",
+    "category": "consumer-apps",
+    "difficulty": "junior",
+    "tags": ["caching", "id-generation", "read-heavy"]
+  },
+  {
+    "title": "Design a real-time chat application (WhatsApp/Slack)",
+    "prompt": "Design a chat application supporting 1-on-1 and group chats up to 256 members. Users should see new messages within 1 second. Messages must be delivered exactly once even if the recipient is offline (queued and delivered when they reconnect). The system has 1B daily active users sending 50B messages/day. Cover: how clients connect (long-poll vs WebSocket), how messages are routed across servers, message persistence and history, online/offline status, and read receipts.",
+    "category": "consumer-apps",
+    "difficulty": "senior",
+    "tags": ["websocket", "messaging", "real-time", "offline-delivery"]
+  },
+  {
+    "title": "Design a distributed rate limiter",
+    "prompt": "Design a rate-limiter service that other services call to ask 'can user X perform action Y right now?'. It must enforce limits like '100 API calls per user per minute' and '10000 requests per IP per hour' across a fleet of 50+ application servers. The check must add less than 5ms to each request, must not be a single point of failure, and must give consistent answers (a user can't bypass the limit by hitting different servers). Address: token bucket vs sliding window, where state lives, how to handle the rate-limiter itself going down, and the consistency vs latency trade-off.",
+    "category": "infrastructure",
+    "difficulty": "senior",
+    "tags": ["rate-limiting", "consistency", "distributed-state", "low-latency"]
+  },
+  {
+    "title": "Design a distributed cache (memcached/Redis cluster)",
+    "prompt": "Design a distributed in-memory cache that the application layer uses for 100k QPS of get/set operations. Total cache size needs to fit 500GB of data across many nodes. Cache hits must return in under 1ms p99. Discuss: how keys are sharded across nodes, what happens when a node fails (do we lose those keys, replicate, or reroute?), how clients discover the topology, eviction policies, and consistency guarantees (which are weak — and why that's OK).",
+    "category": "infrastructure",
+    "difficulty": "mid",
+    "tags": ["caching", "consistent-hashing", "sharding", "in-memory"]
+  },
+  {
+    "title": "Design an analytics ingestion pipeline",
+    "prompt": "Design a system that ingests 1M events/sec from web and mobile clients (page views, clicks, custom events) and makes them queryable for analytics dashboards within 5 minutes. The data must be durable (no event loss). Analysts run SQL-like queries over the last 90 days. Address: the ingestion path (how events get in without dropping), the storage layer (columnar vs row, partitioning by time), the query layer, and how you handle a 10x traffic spike during a marketing campaign.",
+    "category": "data-systems",
+    "difficulty": "senior",
+    "tags": ["streaming", "ingestion", "olap", "time-series"]
+  },
+  {
+    "title": "Design a search index (e.g., Elasticsearch use case)",
+    "prompt": "Design a search service that indexes 100M product listings for an e-commerce site. Users type queries and expect relevant results with autocomplete suggestions in under 100ms. New products are added throughout the day; product details (price, stock) update frequently. Address: the indexing pipeline (how product changes flow into the index), the query path, ranking signals, sharding the index, and the trade-off between freshness and indexing cost.",
+    "category": "data-systems",
+    "difficulty": "mid",
+    "tags": ["search", "indexing", "relevance", "near-real-time"]
+  },
+  {
+    "title": "Design a notification system",
+    "prompt": "Design a notification system that delivers push notifications, emails, and SMS to 100M users. Other services call it ('notify user X about event Y') and don't care about the delivery mechanism. Daily volume: 500M pushes, 50M emails, 5M SMS. Address: how requests are queued and processed, retry behavior (e.g., a vendor like Twilio is down), user preferences (which channels they accept, quiet hours), templating, and avoiding duplicate notifications.",
+    "category": "infrastructure",
+    "difficulty": "mid",
+    "tags": ["queues", "delivery", "retry", "user-preferences"]
+  },
+  {
+    "title": "Design Instagram's photo upload and feed",
+    "prompt": "Design the photo-upload and feed-rendering pipeline for Instagram. Users upload photos (typically 5-15MB after compression) from mobile clients; their followers see those photos in a chronological feed. The platform has 2B users and handles 100M photo uploads/day. Address: the upload path (direct-to-storage vs through API servers), image processing (thumbnails, formats), storage layout, the read path (how feeds are assembled), CDN strategy, and how you handle uneven popularity (a viral photo vs a typical one).",
+    "category": "consumer-apps",
+    "difficulty": "mid",
+    "tags": ["media-storage", "cdn", "feed", "image-processing"]
+  },
+  {
+    "title": "Design a payment processing service",
+    "prompt": "Design the core payment service for an e-commerce platform. It accepts a payment request (user, amount, payment method), routes to the right payment processor (Stripe, PayPal, etc.), and confirms success or failure. Volume: 10k transactions/sec at peak. Money cannot be lost or double-charged under any failure mode. Address: idempotency, the dual-write problem (charging the customer AND recording the order), reconciliation with the processor, retries on transient failures, and audit logging.",
+    "category": "infrastructure",
+    "difficulty": "senior",
+    "tags": ["payments", "idempotency", "exactly-once", "reliability"]
+  }
+]

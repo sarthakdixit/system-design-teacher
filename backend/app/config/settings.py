@@ -73,6 +73,12 @@ class Settings(BaseSettings):
         ),
     )
 
+    feedback_cache_ttl_days: int = Field(
+        default=30,
+        ge=1,
+        description="How long design-feedback cache entries live before MongoDB TTL sweeps them.",
+    )
+
     cors_allowed_origins: str = "http://localhost:3000,http://localhost:5173"
 
     mongo: MongoSettings = Field(default_factory=MongoSettings)

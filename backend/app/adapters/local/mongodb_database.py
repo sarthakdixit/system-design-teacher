@@ -10,6 +10,11 @@ from pymongo import DESCENDING, ReturnDocument
 from pymongo.errors import DuplicateKeyError as PyMongoDuplicateKeyError
 
 from app.core.domain.attempt import Attempt, AttemptType, NewAttempt
+from app.core.domain.design_feedback import (
+    CachedFeedback,
+    DesignFeedback,
+    NewCachedFeedback,
+)
 from app.core.domain.question import Difficulty, NewQuestion, Question, QuestionType
 from app.core.domain.user import NewUser, User
 from app.core.ports.database import (
@@ -68,6 +73,16 @@ def _doc_to_attempt(doc: dict[str, Any]) -> Attempt:
         type=doc["type"],
         user_notes=doc.get("user_notes"),
         created_at=doc["created_at"],
+    )
+
+
+def _doc_to_cached_feedback(doc: dict[str, Any]) -> CachedFeedback:
+    return CachedFeedback(
+        key=doc["key"],
+        feedback=DesignFeedback.model_validate(doc["feedback"]),
+        hit_count=doc.get("hit_count", 0),
+        created_at=doc["created_at"],
+        expires_at=doc["expires_at"],
     )
 
 
@@ -251,6 +266,34 @@ class _MongoFeedbackCacheRepository:
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
         self._collection = db["feedback_cache"]
 
+    async def get(self, key: str) -> CachedFeedback:
+        document = await self._collection.find_one({"key": key})
+        if document is None:
+            raise NotFoundError(f"No cached feedback for key={key!r}")
+        return _doc_to_cached_feedback(document)
+
+    async def insert(self, new_entry: NewCachedFeedback) -> CachedFeedback:
+        document = {
+            "key": new_entry.key,
+            "feedback": new_entry.feedback.model_dump(),
+            "hit_count": new_entry.hit_count,
+            "created_at": new_entry.created_at,
+            "expires_at": new_entry.expires_at,
+        }
+        try:
+            await self._collection.insert_one(document)
+        except PyMongoDuplicateKeyError as exc:
+            raise DuplicateKeyError(
+                f"Feedback cache entry with key={new_entry.key!r} already exists"
+            ) from exc
+        return _doc_to_cached_feedback(document)
+
+    async def increment_hit_count(self, key: str) -> None:
+        await self._collection.update_one(
+            {"key": key},
+            {"$inc": {"hit_count": 1}},
+        )
+
     async def health_check(self) -> bool:
         try:
             await self._collection.estimated_document_count()
@@ -281,6 +324,11 @@ class MongoDBDatabase:
         )
         await self._db["attempts"].create_index(
             [("user_id", 1), ("created_at", DESCENDING)]
+        )
+        await self._db["feedback_cache"].create_index("key", unique=True)
+        await self._db["feedback_cache"].create_index(
+            "expires_at",
+            expireAfterSeconds=0,
         )
         self._indexes_ensured = True
 

@@ -62,5 +62,28 @@ class QuestionService:
 
         return FetchSituationQuestionResult(question=question, rate_limit=outcome)
 
+    async def fetch_random_design_question(
+        self,
+        *,
+        category: str | None,
+        difficulty: Difficulty | None,
+    ) -> Question:
+        question = await self._database.questions.random_by_filter(
+            type="design_system",
+            category=category,
+            difficulty=difficulty,
+        )
+
+        self._telemetry.log(
+            "info",
+            "design_question_fetched",
+            question_id=question.id,
+            category=question.category,
+            difficulty=question.difficulty,
+        )
+        self._telemetry.track_metric("design_question_fetch_count", 1.0)
+
+        return question
+
     async def get_question_by_id(self, question_id: str) -> Question:
         return await self._database.questions.get_by_id(question_id)

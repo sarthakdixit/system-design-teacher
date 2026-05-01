@@ -12,6 +12,8 @@ from app.adapters.local.redis_cache import RedisCache
 from app.adapters.local.stub_llm import StubLLMProvider
 from app.core.services.attempt_service import AttemptService
 from app.core.services.auth_service import AuthService
+from app.core.services.design_feedback_service import DesignFeedbackService
+from app.core.services.diagram_hash_service import DiagramHashService
 from app.core.services.health_service import HealthService
 from app.core.services.jwt_service import JWTService
 from app.core.services.question_service import QuestionService
@@ -116,6 +118,18 @@ class Container(containers.DeclarativeContainer):
         AttemptService,
         database=database,
         telemetry=telemetry,
+    )
+
+    diagram_hash_service = providers.Singleton(DiagramHashService)
+
+    design_feedback_service = providers.Factory(
+        DesignFeedbackService,
+        database=database,
+        llm_provider=llm_provider,
+        rate_limit_service=rate_limit_service,
+        diagram_hash_service=diagram_hash_service,
+        telemetry=telemetry,
+        cache_ttl_days=config.feedback_cache_ttl_days,
     )
 
     health_service = providers.Factory(

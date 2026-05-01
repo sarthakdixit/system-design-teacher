@@ -30,6 +30,10 @@ class SituationQuestionResponse(QuestionResponse):
     )
 
 
+class DesignQuestionResponse(QuestionResponse):
+    pass
+
+
 class RateLimitMeta(BaseModel):
     model_config = ConfigDict(frozen=True)
 

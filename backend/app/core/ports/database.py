@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 
 from app.core.domain.attempt import Attempt, AttemptType, NewAttempt
+from app.core.domain.design_feedback import CachedFeedback, NewCachedFeedback
 from app.core.domain.question import Difficulty, NewQuestion, Question, QuestionType
 from app.core.domain.user import NewUser, User
 
@@ -73,6 +74,12 @@ class AttemptRepository(Protocol):
 
 @runtime_checkable
 class FeedbackCacheRepository(Protocol):
+    async def get(self, key: str) -> CachedFeedback: ...
+
+    async def insert(self, new_entry: NewCachedFeedback) -> CachedFeedback: ...
+
+    async def increment_hit_count(self, key: str) -> None: ...
+
     async def health_check(self) -> bool: ...
 
 
