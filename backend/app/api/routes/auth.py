@@ -39,7 +39,7 @@ async def microsoft_callback(
     result = await auth_service.login_with_microsoft_token(payload.microsoft_token)
     return LoginResponse(
         access_token=result.access_token,
-        expires_in_seconds=settings.jwt.expiry_hours * 3600,
+        expires_in_seconds=settings.jwt_expiry_hours * 3600,
         user=_user_to_response(result.user),
     )
 
