@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "namePrefix": {
+      "value": "sk"
+    },
+    "location": {
+      "value": "eastus2"
+    },
+    "staticWebAppLocation": {
+      "value": "eastus2"
+    },
+    "deployingUserObjectId": {
+      "value": "REPLACE_WITH_YOUR_OBJECT_ID"
+    },
+    "enableCosmosFreeTier": {
+      "value": true
+    },
+    "tags": {
+      "value": {
+        "project": "system-design-teacher",
+        "environment": "prod",
+        "managedBy": "bicep"
+      }
+    }
+  }
+}

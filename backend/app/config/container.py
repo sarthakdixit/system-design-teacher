@@ -10,6 +10,7 @@ from app.adapters.local.mongodb_database import MongoDBDatabase
 from app.adapters.local.openai_llm import OpenAILLMProvider
 from app.adapters.local.redis_cache import RedisCache
 from app.adapters.local.stub_llm import StubLLMProvider
+from app.config.settings import get_settings
 from app.core.services.attempt_service import AttemptService
 from app.core.services.auth_service import AuthService
 from app.core.services.design_feedback_service import DesignFeedbackService
@@ -17,45 +18,92 @@ from app.core.services.diagram_hash_service import DiagramHashService
 from app.core.services.health_service import HealthService
 from app.core.services.jwt_service import JWTService
 from app.core.services.question_service import QuestionService
-from app.core.services.rate_limit_service import (
-    RateLimitConfig,
-    RateLimitedAction,
-    RateLimitService,
-)
+from app.core.services.rate_limit_service import RateLimitService
 
 
-def build_rate_limit_configs(
-    *,
-    situation_per_user: int,
-    situation_global: int,
-    design_per_user: int,
-    design_global: int,
-) -> dict[RateLimitedAction, RateLimitConfig]:
-    return {
-        RateLimitedAction.SITUATION_FETCH: RateLimitConfig(
-            per_user_daily=situation_per_user,
-            global_daily=situation_global,
-        ),
-        RateLimitedAction.DESIGN_SUBMISSION: RateLimitConfig(
-            per_user_daily=design_per_user,
-            global_daily=design_global,
-        ),
-    }
+def _make_entra_auth_provider(*, tenant_id: str, client_id: str):
+    from app.adapters.azure.entra_auth import EntraAuthProvider
+
+    return EntraAuthProvider(
+        tenant_id=tenant_id,
+        client_id=client_id,
+    )
+
+
+def _make_app_insights_telemetry(*, connection_string: str):
+    from app.adapters.azure.app_insights_telemetry import AppInsightsTelemetry
+
+    return AppInsightsTelemetry(connection_string=connection_string)
+
+
+def _make_keyvault_secrets(*, vault_url: str):
+    from app.adapters.azure.key_vault_secrets import KeyVaultSecretsProvider
+
+    return KeyVaultSecretsProvider(vault_url=vault_url)
+
+
+def _make_cosmos_database(*, uri: str, db_name: str):
+    from app.adapters.azure.cosmos_database import CosmosDatabase
+
+    return CosmosDatabase(uri=uri, db_name=db_name)
 
 
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
 
-    auth_provider = providers.Singleton(MockAuthProvider)
+    settings = providers.Singleton(get_settings)
 
-    database = providers.Singleton(
-        MongoDBDatabase,
-        uri=config.mongo.uri,
-        db_name=config.mongo.db_name,
+    secrets = providers.Selector(
+        config.environment,
+        local=providers.Singleton(EnvSecretsProvider),
+        azure=providers.Singleton(
+            _make_keyvault_secrets,
+            vault_url=config.azure_keyvault_url,
+        ),
+    )
+
+    telemetry = providers.Selector(
+        config.environment,
+        local=providers.Singleton(ConsoleTelemetry),
+        azure=providers.Singleton(
+            _make_app_insights_telemetry,
+            connection_string=config.appinsights_connection_string,
+        ),
+    )
+
+    database = providers.Selector(
+        config.environment,
+        local=providers.Singleton(
+            MongoDBDatabase,
+            uri=config.mongo_uri,
+            db_name=config.mongo_db_name,
+        ),
+        azure=providers.Singleton(
+            _make_cosmos_database,
+            uri=config.mongo_uri,
+            db_name=config.mongo_db_name,
+        ),
+    )
+
+    cache = providers.Singleton(
+        RedisCache,
+        url=config.redis_url,
+    )
+
+    rate_limiter = providers.Singleton(MemoryRateLimiter)
+
+    auth_provider = providers.Selector(
+        config.environment,
+        local=providers.Singleton(MockAuthProvider),
+        azure=providers.Singleton(
+            _make_entra_auth_provider,
+            tenant_id=config.microsoft_tenant_id,
+            client_id=config.microsoft_client_id,
+        ),
     )
 
     llm_provider = providers.Selector(
-        config.llm_provider,
+        config.effective_llm_provider,
         openai=providers.Singleton(
             OpenAILLMProvider,
             api_key=config.openai_api_key,
@@ -63,25 +111,21 @@ class Container(containers.DeclarativeContainer):
         stub=providers.Singleton(StubLLMProvider),
     )
 
-    cache = providers.Singleton(
-        RedisCache,
-        url=config.redis.url,
-    )
-
-    rate_limiter = providers.Singleton(MemoryRateLimiter)
-
-    telemetry = providers.Singleton(
-        ConsoleTelemetry,
-        level=config.log_level,
-    )
-
-    secrets_provider = providers.Singleton(EnvSecretsProvider)
-
     jwt_service = providers.Singleton(
         JWTService,
-        secret=config.jwt.secret,
-        algorithm=config.jwt.algorithm,
-        expiry_hours=config.jwt.expiry_hours,
+        secret=config.jwt_secret,
+        algorithm=config.jwt_algorithm,
+        expiry_hours=config.jwt_expiry_hours,
+    )
+
+    rate_limit_service = providers.Factory(
+        RateLimitService,
+        rate_limiter=rate_limiter,
+        telemetry=telemetry,
+        situation_daily=config.rate_limit_situation_daily,
+        design_daily=config.rate_limit_design_daily,
+        global_situation_daily=config.global_cap_situation_daily,
+        global_design_daily=config.global_cap_design_daily,
     )
 
     auth_service = providers.Factory(
@@ -90,21 +134,6 @@ class Container(containers.DeclarativeContainer):
         database=database,
         jwt_service=jwt_service,
         telemetry=telemetry,
-    )
-
-    rate_limit_configs = providers.Singleton(
-        build_rate_limit_configs,
-        situation_per_user=config.rate_limits.rate_limit_situation_daily,
-        situation_global=config.rate_limits.global_cap_situation_daily,
-        design_per_user=config.rate_limits.rate_limit_design_daily,
-        design_global=config.rate_limits.global_cap_design_daily,
-    )
-
-    rate_limit_service = providers.Factory(
-        RateLimitService,
-        rate_limiter=rate_limiter,
-        telemetry=telemetry,
-        configs=rate_limit_configs,
     )
 
     question_service = providers.Factory(
@@ -134,11 +163,11 @@ class Container(containers.DeclarativeContainer):
 
     health_service = providers.Factory(
         HealthService,
-        auth_provider=auth_provider,
         database=database,
-        llm_provider=llm_provider,
         cache=cache,
         rate_limiter=rate_limiter,
+        llm_provider=llm_provider,
+        auth_provider=auth_provider,
+        secrets_provider=secrets,
         telemetry=telemetry,
-        secrets_provider=secrets_provider,
     )

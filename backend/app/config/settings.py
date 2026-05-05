@@ -1,105 +1,129 @@
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-Environment = Literal["local", "azure"]
-LLMProviderName = Literal["openai", "stub"]
 
-_OPENAI_PLACEHOLDER = "sk-REPLACE_ME_WITH_YOUR_KEY"
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
-
-
-class MongoSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="MONGO_", case_sensitive=False)
-
-    uri: str = "mongodb://localhost:27018"
-    db_name: str = "sdt"
-
-
-class RedisSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="REDIS_", case_sensitive=False)
-
-    url: str = "redis://localhost:6379"
-
-
-class JWTSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="JWT_", case_sensitive=False)
-
-    secret: str = "dev-only-do-not-use-in-prod-replace-me"
-    algorithm: str = "HS256"
-    expiry_hours: int = 24
-
-
-class MicrosoftSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="MICROSOFT_", case_sensitive=False)
-
-    client_id: str = "dev-placeholder"
-    tenant_id: str = "common"
-
-
-class RateLimitSettings(BaseSettings):
-    model_config = SettingsConfigDict(case_sensitive=False)
-
-    rate_limit_situation_daily: int = Field(default=5, ge=1)
-    rate_limit_design_daily: int = Field(default=2, ge=1)
-    global_cap_situation_daily: int = Field(default=50, ge=1)
-    global_cap_design_daily: int = Field(default=100, ge=1)
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=_BACKEND_ROOT / ".env.local",
         env_file_encoding="utf-8",
-        case_sensitive=False,
         extra="ignore",
+        case_sensitive=False,
     )
 
-    environment: Environment = "local"
+    environment: Literal["local", "azure"] = "local"
 
-    log_level: str = "INFO"
+    mongo_uri: str = "mongodb://mongo:27017"
+    mongo_db_name: str = "sdt"
 
-    openai_api_key: str = _OPENAI_PLACEHOLDER
+    redis_url: str = "redis://redis:6379"
 
-    llm_provider: LLMProviderName | None = Field(
-        default=None,
-        description=(
-            "Which LLM adapter the DI container should use. "
-            "Defaults to 'openai' if OPENAI_API_KEY is set to a real value, otherwise 'stub'."
-        ),
+    openai_api_key: str = Field(
+        default="sk-placeholder",
+        description="OpenAI API key. Use a real key for production behavior; the default keeps the app bootable.",
     )
+    llm_provider: Literal["auto", "openai", "stub"] = "auto"
+
+    jwt_secret: str = Field(
+        default="dev-secret-change-me",
+        description="HS256 signing key for our session JWT.",
+    )
+    jwt_algorithm: str = "HS256"
+    jwt_expiry_hours: int = 24
+
+    microsoft_client_id: str = "dev-client-id"
+    microsoft_tenant_id: str = "common"
+
+    rate_limit_situation_daily: int = 5
+    rate_limit_design_daily: int = 2
+    global_cap_situation_daily: int = 50
+    global_cap_design_daily: int = 100
 
     feedback_cache_ttl_days: int = Field(
         default=30,
         ge=1,
-        description="How long design-feedback cache entries live before MongoDB TTL sweeps them.",
+        le=365,
+        description="How many days a feedback cache entry lives before MongoDB TTL deletes it.",
     )
 
-    cors_allowed_origins: str = "http://localhost:3000,http://localhost:5173"
+    cors_allowed_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:3000", "http://localhost:5173"]
+    )
 
-    mongo: MongoSettings = Field(default_factory=MongoSettings)
-    redis: RedisSettings = Field(default_factory=RedisSettings)
-    jwt: JWTSettings = Field(default_factory=JWTSettings)
-    microsoft: MicrosoftSettings = Field(default_factory=MicrosoftSettings)
-    rate_limits: RateLimitSettings = Field(default_factory=RateLimitSettings)
+    azure_keyvault_url: str = Field(
+        default="",
+        description="Azure Key Vault URL. Required when ENVIRONMENT=azure.",
+    )
+    appinsights_connection_string: str = Field(
+        default="",
+        description="Application Insights connection string. Required when ENVIRONMENT=azure.",
+    )
 
+    @computed_field
     @property
-    def cors_origins_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
-
-    @property
-    def effective_llm_provider(self) -> LLMProviderName:
-        if self.llm_provider is not None:
-            return self.llm_provider
-        if self.openai_api_key and self.openai_api_key != _OPENAI_PLACEHOLDER:
+    def effective_llm_provider(self) -> Literal["openai", "stub"]:
+        if self.llm_provider == "openai":
+            return "openai"
+        if self.llm_provider == "stub":
+            return "stub"
+        if self.openai_api_key.startswith("sk-") and not self.openai_api_key.startswith(
+            "sk-placeholder"
+        ):
             return "openai"
         return "stub"
 
 
-@lru_cache(maxsize=1)
+_KEYVAULT_BACKED_FIELDS = (
+    "openai_api_key",
+    "jwt_secret",
+    "mongo_uri",
+    "microsoft_client_id",
+    "microsoft_tenant_id",
+)
+
+
+async def _hydrate_from_keyvault(settings: Settings) -> Settings:
+    from app.adapters.azure.key_vault_secrets import KeyVaultSecretsProvider
+
+    if not settings.azure_keyvault_url:
+        raise RuntimeError(
+            "AZURE_KEYVAULT_URL is required when ENVIRONMENT=azure but was not set"
+        )
+
+    provider = KeyVaultSecretsProvider(vault_url=settings.azure_keyvault_url)
+    overrides: dict[str, str] = {}
+    try:
+        for field_name in _KEYVAULT_BACKED_FIELDS:
+            try:
+                overrides[field_name] = await provider.get_secret(field_name.upper())
+            except Exception:
+                pass
+    finally:
+        await provider.close()
+
+    if not overrides:
+        return settings
+    return settings.model_copy(update=overrides)
+
+
+@lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    if settings.environment == "azure":
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                return settings
+            return loop.run_until_complete(_hydrate_from_keyvault(settings))
+        except RuntimeError:
+            return asyncio.run(_hydrate_from_keyvault(settings))
+    return settings

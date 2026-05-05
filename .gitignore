@@ -72,3 +72,5 @@ tmp/
 .AppleDouble
 .LSOverride
 ehthumbs.db
+
+infra/parameters.json

@@ -30,8 +30,8 @@ dependencies = [
     # Telemetry / logging
     "structlog>=24.4.0,<25.0",
 
-    # JSON / cryptography (for JWT in Batch 2)
-    "pyjwt>=2.10.0,<3.0",
+    # JSON / cryptography (for JWT in Batch 2; [crypto] adds JWKS support for Batch 5)
+    "pyjwt[crypto]>=2.10.0,<3.0",
 ]
 
 [project.optional-dependencies]
@@ -44,6 +44,12 @@ dev = [
     "mypy>=1.13.0,<2.0",
     # Type stubs for libraries that need them
     "types-redis>=4.6.0",
+]
+azure = [
+    "azure-identity>=1.19.0,<2.0",          # ManagedIdentityCredential, DefaultAzureCredential
+    "azure-keyvault-secrets>=4.9.0,<5.0",   # Key Vault secrets client
+    "azure-monitor-opentelemetry>=1.6.0,<2.0",  # App Insights via OpenTelemetry
+    "aiohttp>=3.10,<4.0",
 ]
 
 [build-system]

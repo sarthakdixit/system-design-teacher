@@ -19,33 +19,7 @@ from app.config.settings import Settings, get_settings
 
 def _build_container(settings: Settings) -> Container:
     container = Container()
-    container.config.from_dict(
-        {
-            "environment": settings.environment,
-            "log_level": settings.log_level,
-            "openai_api_key": settings.openai_api_key,
-            "llm_provider": settings.effective_llm_provider,
-            "feedback_cache_ttl_days": settings.feedback_cache_ttl_days,
-            "mongo": {
-                "uri": settings.mongo.uri,
-                "db_name": settings.mongo.db_name,
-            },
-            "redis": {
-                "url": settings.redis.url,
-            },
-            "jwt": {
-                "secret": settings.jwt.secret,
-                "algorithm": settings.jwt.algorithm,
-                "expiry_hours": settings.jwt.expiry_hours,
-            },
-            "rate_limits": {
-                "rate_limit_situation_daily": settings.rate_limits.rate_limit_situation_daily,
-                "rate_limit_design_daily": settings.rate_limits.rate_limit_design_daily,
-                "global_cap_situation_daily": settings.rate_limits.global_cap_situation_daily,
-                "global_cap_design_daily": settings.rate_limits.global_cap_design_daily,
-            },
-        }
-    )
+    container.config.from_dict(settings.model_dump())
     container.wire(
         modules=[
             health_routes,
@@ -70,7 +44,6 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         "info",
         "app_starting",
         environment=settings.environment,
-        log_level=settings.log_level,
         llm_provider=settings.effective_llm_provider,
         feedback_cache_ttl_days=settings.feedback_cache_ttl_days,
     )
@@ -93,7 +66,6 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             await container.cache().close()
         except Exception as exc:
             telemetry.track_exception(exc, component="cache_close")
-
         telemetry.log("info", "app_stopped")
 
 
@@ -102,7 +74,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="System Design Teacher API",
-        version="0.4.0",
+        version="0.5.0",
         description=(
             "Backend for the System Design Teacher platform. "
             "See /health/deep for end-to-end dependency status."
@@ -112,14 +84,13 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins_list,
+        allow_origins=settings.cors_allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
     register_exception_handlers(app)
-
     app.include_router(health_routes.router)
     app.include_router(auth_routes.router)
     app.include_router(questions_routes.router)
