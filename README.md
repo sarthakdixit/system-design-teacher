@@ -122,3 +122,4 @@ TBD (likely MIT).
 ## Contact
 
 Portfolio project — feedback welcome via GitHub issues.
+
