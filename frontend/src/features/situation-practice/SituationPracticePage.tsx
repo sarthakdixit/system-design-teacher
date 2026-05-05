@@ -74,7 +74,7 @@ function SituationPracticeContent() {
       {rateLimitsQuery.data && (
         <div className="rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-700">
           <p>
-            <strong>Today's budget:</strong> {rateLimitsQuery.data.situationFetch.userRemaining} of{" "}
+            <strong>Today&apos;s budget:</strong> {rateLimitsQuery.data.situationFetch.userRemaining} of{" "}
             {rateLimitsQuery.data.situationFetch.userLimit} situation fetches remaining · resets in{" "}
             {formatResetIn(rateLimitsQuery.data.situationFetch.resetInSeconds)}
           </p>

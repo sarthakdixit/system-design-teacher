@@ -21,13 +21,13 @@ export function useAuth(): UseAuthResult {
   const setSession = useAuthStore((s) => s.setSession);
   const clearSession = useAuthStore((s) => s.clearSession);
 
+  const msal = useMsal();
   const msalEnabled = env.VITE_AUTH_MODE === "msal";
-  const msal = msalEnabled ? useMsalSafe() : null;
 
   const loginMutation = useMutation<LoginResponse>({
     mutationFn: async () => {
       const microsoftToken = msalEnabled
-        ? await acquireMicrosoftToken(msal!)
+        ? await acquireMicrosoftToken(msal)
         : MOCK_MICROSOFT_TOKEN;
       return exchangeMicrosoftToken(microsoftToken);
     },
@@ -38,7 +38,7 @@ export function useAuth(): UseAuthResult {
 
   const logout = () => {
     clearSession();
-    if (msalEnabled && msal) {
+    if (msalEnabled) {
       void msal.instance.logoutPopup().catch(() => {
         /* swallowed: even if MSAL logout fails, our local session is already cleared */
       });
@@ -54,10 +54,6 @@ export function useAuth(): UseAuthResult {
     },
     logout,
   };
-}
-
-function useMsalSafe() {
-  return useMsal();
 }
 
 async function acquireMicrosoftToken(msal: ReturnType<typeof useMsal>): Promise<string> {

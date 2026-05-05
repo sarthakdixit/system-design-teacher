@@ -26,7 +26,7 @@ export function AnswerReveal({ referenceAnswer }: Props) {
         <h3 className="text-base font-semibold text-slate-900">Try answering first</h3>
         <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
           Take a moment to think through your approach. Use the notes field below to capture your
-          thoughts. When you're ready, reveal the reference answer to compare.
+          thoughts. When you&apos;re ready, reveal the reference answer to compare.
         </p>
         <div className="mt-4 flex justify-center">
           <Button onClick={() => setRevealed(true)}>Reveal reference answer</Button>
