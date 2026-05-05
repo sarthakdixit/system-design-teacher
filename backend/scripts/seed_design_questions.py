@@ -32,13 +32,13 @@ async def _existing_titles(database: MongoDBDatabase) -> set[str]:
 
 async def main() -> int:
     settings = get_settings()
-    print(f"MONGO_URI: {settings.mongo.uri}")
-    print(f"MONGO_DB_NAME: {settings.mongo.db_name}")
+    print(f"MONGO_URI: {settings.mongo_uri}")
+    print(f"MONGO_DB_NAME: {settings.mongo_db_name}")
 
     seed_entries = _load_seed()
     print(f"Loaded {len(seed_entries)} design questions from {_SEED_PATH.name}")
 
-    database = MongoDBDatabase(uri=settings.mongo.uri, db_name=settings.mongo.db_name)
+    database = MongoDBDatabase(uri=settings.mongo_uri, db_name=settings.mongo_db_name)
     try:
         await database.ensure_indexes()
         existing = await _existing_titles(database)

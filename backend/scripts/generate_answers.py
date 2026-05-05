@@ -109,7 +109,7 @@ async def main(args: argparse.Namespace) -> int:
         )
         return 2
 
-    database = MongoDBDatabase(uri=settings.mongo.uri, db_name=settings.mongo.db_name)
+    database = MongoDBDatabase(uri=settings.mongo_uri, db_name=settings.mongo_db_name)
     llm: LLMProvider = OpenAILLMProvider(api_key=settings.openai_api_key)
 
     try:

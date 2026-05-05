@@ -41,7 +41,7 @@ async def _existing_titles(database: MongoDBDatabase) -> set[str]:
 
 async def main() -> int:
     settings = get_settings()
-    database = MongoDBDatabase(uri=settings.mongo.uri, db_name=settings.mongo.db_name)
+    database = MongoDBDatabase(uri=settings.mongo_uri, db_name=settings.mongo_db_name)
 
     try:
         await database.ensure_indexes()
