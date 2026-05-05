@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class RateLimitDecision(BaseModel):
-
     model_config = ConfigDict(frozen=True)
 
     allowed: bool
@@ -26,18 +25,14 @@ class RateLimitError(Exception):
 
 @runtime_checkable
 class RateLimiter(Protocol):
-
     async def check_and_increment(
         self,
         *,
         key: str,
         limit: int,
         window_seconds: int,
-    ) -> RateLimitDecision:
-        ...
+    ) -> RateLimitDecision: ...
 
-    async def peek(self, *, key: str) -> int:
-        ...
+    async def peek(self, *, key: str) -> int: ...
 
-    async def health_check(self) -> bool:
-        ...
+    async def health_check(self) -> bool: ...

@@ -9,13 +9,11 @@ from app.core.ports.rate_limiter import RateLimitDecision
 
 @dataclass
 class _Counter:
-
     count: int
     expires_at: float
 
 
 class MemoryRateLimiter:
-
     def __init__(self) -> None:
         self._counters: dict[str, _Counter] = {}
         self._lock = asyncio.Lock()
@@ -45,7 +43,6 @@ class MemoryRateLimiter:
                     remaining=limit - 1,
                     reset_in_seconds=window_seconds,
                 )
-
 
             existing.count += 1
             current = existing.count

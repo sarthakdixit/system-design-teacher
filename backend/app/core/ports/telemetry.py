@@ -7,15 +7,13 @@ LogLevel = Literal["debug", "info", "warning", "error", "critical"]
 
 @runtime_checkable
 class Telemetry(Protocol):
-
     def log(
         self,
         level: LogLevel,
         event: str,
         /,
         **fields: Any,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def track_metric(
         self,
@@ -23,19 +21,15 @@ class Telemetry(Protocol):
         value: float,
         /,
         **tags: str,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def track_exception(
         self,
         exc: BaseException,
         /,
         **fields: Any,
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    def bind(self, **context: Any) -> Telemetry:
-        ...
+    def bind(self, **context: Any) -> Telemetry: ...
 
-    async def health_check(self) -> bool:
-        ...
+    async def health_check(self) -> bool: ...

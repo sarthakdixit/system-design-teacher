@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -29,7 +29,7 @@ from app.core.ports.database import (
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _to_object_id(value: str) -> ObjectId:
@@ -234,12 +234,7 @@ class _MongoAttemptRepository:
         if attempt_type is not None:
             match["type"] = attempt_type
 
-        cursor = (
-            self._collection.find(match)
-            .sort("created_at", DESCENDING)
-            .skip(skip)
-            .limit(limit)
-        )
+        cursor = self._collection.find(match).sort("created_at", DESCENDING).skip(skip).limit(limit)
         documents = await cursor.to_list(length=limit)
         return [_doc_to_attempt(doc) for doc in documents]
 
@@ -319,12 +314,8 @@ class MongoDBDatabase:
         if self._indexes_ensured:
             return
         await self._db["users"].create_index("microsoft_oid", unique=True)
-        await self._db["questions"].create_index(
-            [("type", 1), ("difficulty", 1), ("category", 1)]
-        )
-        await self._db["attempts"].create_index(
-            [("user_id", 1), ("created_at", DESCENDING)]
-        )
+        await self._db["questions"].create_index([("type", 1), ("difficulty", 1), ("category", 1)])
+        await self._db["attempts"].create_index([("user_id", 1), ("created_at", DESCENDING)])
         await self._db["feedback_cache"].create_index("key", unique=True)
         await self._db["feedback_cache"].create_index(
             "expires_at",

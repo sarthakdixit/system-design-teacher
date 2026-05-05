@@ -47,6 +47,7 @@ def _make_cosmos_database(*, uri: str, db_name: str):
 
     return CosmosDatabase(uri=uri, db_name=db_name)
 
+
 def _make_rate_limit_configs(
     *,
     situation_user_daily: int,

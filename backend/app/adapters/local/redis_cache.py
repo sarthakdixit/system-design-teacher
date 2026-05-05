@@ -7,7 +7,6 @@ from app.core.ports.cache import CacheError
 
 
 class RedisCache:
-
     def __init__(self, url: str) -> None:
         self._client: Redis = Redis.from_url(url, decode_responses=True)
 
@@ -42,7 +41,7 @@ class RedisCache:
             return bool(await self._client.ping())
         except RedisError:
             return False
-        except Exception:  # noqa: BLE001
+        except Exception:
             return False
 
     async def close(self) -> None:

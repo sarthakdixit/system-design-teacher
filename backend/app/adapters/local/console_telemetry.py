@@ -52,11 +52,11 @@ def _configure_structlog_once(level: str = "INFO") -> None:
 
 def _level_to_int(level: str) -> int:
     import logging
+
     return getattr(logging, level.upper(), logging.INFO)
 
 
 class ConsoleTelemetry:
-
     def __init__(self, level: str = "INFO") -> None:
         _configure_structlog_once(level=level)
         self._logger = structlog.get_logger("app")

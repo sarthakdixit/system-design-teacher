@@ -10,7 +10,6 @@ from opentelemetry.metrics import Counter, Histogram
 
 from app.core.ports.telemetry import LogLevel, Telemetry
 
-
 _REDACTED_KEYS = frozenset(
     {
         "password",
@@ -29,10 +28,7 @@ _REDACTED_KEYS = frozenset(
 
 
 def _redact(fields: dict[str, Any]) -> dict[str, Any]:
-    return {
-        k: ("***REDACTED***" if k.lower() in _REDACTED_KEYS else v)
-        for k, v in fields.items()
-    }
+    return {k: ("***REDACTED***" if k.lower() in _REDACTED_KEYS else v) for k, v in fields.items()}
 
 
 class AppInsightsTelemetry:

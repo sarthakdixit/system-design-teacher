@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class AuthenticatedUser(BaseModel):
-
     model_config = ConfigDict(frozen=True)
 
     microsoft_oid: str
@@ -21,9 +20,6 @@ class AuthError(Exception):
 
 @runtime_checkable
 class AuthProvider(Protocol):
+    async def verify_token(self, token: str) -> AuthenticatedUser: ...
 
-    async def verify_token(self, token: str) -> AuthenticatedUser:
-        ...
-
-    async def health_check(self) -> bool:
-        ...
+    async def health_check(self) -> bool: ...

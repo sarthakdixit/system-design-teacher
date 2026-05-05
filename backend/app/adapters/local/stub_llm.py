@@ -12,7 +12,6 @@ from app.core.ports.llm_provider import (
     LLMValidationError,
 )
 
-
 _CANNED_TEXT = (
     "[stub LLM response] This adapter does not call OpenAI. "
     "Configure a real OPENAI_API_KEY and switch to OpenAILLMProvider for real output."
@@ -30,7 +29,6 @@ def _fake_usage(prompt_chars: int) -> LLMUsage:
 
 
 class StubLLMProvider:
-
     async def generate(
         self,
         *,

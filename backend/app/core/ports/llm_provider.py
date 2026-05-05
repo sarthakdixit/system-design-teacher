@@ -8,7 +8,6 @@ LLMModel = Literal["gpt-4o", "gpt-4o-mini", "stub"]
 
 
 class LLMMessage(BaseModel):
-
     model_config = ConfigDict(frozen=True)
 
     role: Literal["system", "user", "assistant"]
@@ -16,7 +15,6 @@ class LLMMessage(BaseModel):
 
 
 class LLMUsage(BaseModel):
-
     model_config = ConfigDict(frozen=True)
 
     prompt_tokens: int = Field(ge=0)
@@ -25,7 +23,6 @@ class LLMUsage(BaseModel):
 
 
 class LLMResponse(BaseModel):
-
     model_config = ConfigDict(frozen=True)
 
     content: str
@@ -52,7 +49,6 @@ class LLMValidationError(LLMError):
 
 @runtime_checkable
 class LLMProvider(Protocol):
-
     async def generate(
         self,
         *,
@@ -60,8 +56,7 @@ class LLMProvider(Protocol):
         messages: list[LLMMessage],
         temperature: float = 0.3,
         max_tokens: int | None = None,
-    ) -> LLMResponse:
-        ...
+    ) -> LLMResponse: ...
 
     async def generate_structured[T: BaseModel](
         self,
@@ -71,8 +66,6 @@ class LLMProvider(Protocol):
         response_schema: type[T],
         temperature: float = 0.3,
         max_tokens: int | None = None,
-    ) -> tuple[T, LLMUsage]:
-        ...
+    ) -> tuple[T, LLMUsage]: ...
 
-    async def health_check(self) -> bool:
-        ...
+    async def health_check(self) -> bool: ...

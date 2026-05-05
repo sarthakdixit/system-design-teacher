@@ -17,7 +17,9 @@ def _problem(status_code: int, detail: str, **extra: object) -> JSONResponse:
     return JSONResponse(status_code=status_code, content=body)
 
 
-async def _handle_authentication_failed(_request: Request, exc: AuthenticationFailed) -> JSONResponse:
+async def _handle_authentication_failed(
+    _request: Request, exc: AuthenticationFailed
+) -> JSONResponse:
     response = _problem(status.HTTP_401_UNAUTHORIZED, str(exc) or "Authentication failed")
     response.headers["WWW-Authenticate"] = "Bearer"
     return response

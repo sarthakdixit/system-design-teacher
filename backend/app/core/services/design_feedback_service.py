@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
@@ -22,7 +22,6 @@ from app.core.services.rate_limit_service import (
     RateLimitOutcome,
     RateLimitService,
 )
-
 
 _DEFAULT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "design_feedback.md"
 _DEFAULT_MODEL = "gpt-4o"
@@ -177,7 +176,7 @@ class DesignFeedbackService:
         return cached.feedback
 
     async def _store_in_cache(self, *, cache_key: str, feedback: DesignFeedback) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         new_entry = NewCachedFeedback(
             key=cache_key,
             feedback=feedback,

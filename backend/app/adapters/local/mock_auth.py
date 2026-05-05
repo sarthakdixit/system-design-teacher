@@ -10,7 +10,6 @@ _MOCK_USER = AuthenticatedUser(
 
 
 class MockAuthProvider:
-
     async def verify_token(self, token: str) -> AuthenticatedUser:
         if not token or not token.strip():
             raise AuthError("Empty token")

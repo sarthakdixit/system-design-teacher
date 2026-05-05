@@ -10,7 +10,6 @@ def _to_env_name(secret_name: str) -> str:
 
 
 class EnvSecretsProvider:
-
     async def get_secret(self, name: str) -> str:
         env_name = _to_env_name(name)
         value = os.environ.get(env_name)

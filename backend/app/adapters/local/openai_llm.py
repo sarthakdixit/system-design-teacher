@@ -17,7 +17,6 @@ from app.core.ports.llm_provider import (
     LLMValidationError,
 )
 
-
 _OPENAI_BASE_URL = "https://api.openai.com/v1"
 _DEFAULT_TIMEOUT_SECONDS = 60.0
 
@@ -42,7 +41,9 @@ class OpenAILLMProvider:
         temperature: float = 0.3,
         max_tokens: int | None = None,
     ) -> LLMResponse:
-        body = self._build_request_body(model, messages, temperature, max_tokens, json_response=False)
+        body = self._build_request_body(
+            model, messages, temperature, max_tokens, json_response=False
+        )
         data = await self._post_chat_completion(body)
         return self._parse_response(data, model)
 
@@ -55,7 +56,9 @@ class OpenAILLMProvider:
         temperature: float = 0.3,
         max_tokens: int | None = None,
     ) -> tuple[T, LLMUsage]:
-        body = self._build_request_body(model, messages, temperature, max_tokens, json_response=True)
+        body = self._build_request_body(
+            model, messages, temperature, max_tokens, json_response=True
+        )
         data = await self._post_chat_completion(body)
         response = self._parse_response(data, model)
 
@@ -125,9 +128,7 @@ class OpenAILLMProvider:
         if response.status_code == 429:
             raise LLMRateLimitError(f"OpenAI rate limit hit: {response.text}")
         if response.status_code >= 400:
-            raise LLMError(
-                f"OpenAI returned {response.status_code}: {response.text}"
-            )
+            raise LLMError(f"OpenAI returned {response.status_code}: {response.text}")
 
         try:
             return response.json()
@@ -148,9 +149,11 @@ class OpenAILLMProvider:
         except (KeyError, IndexError, TypeError) as exc:
             raise LLMError(f"Unexpected OpenAI response shape: {exc}") from exc
 
-        finish_reason = finish_reason_raw if finish_reason_raw in {
-            "stop", "length", "content_filter"
-        } else "error"
+        finish_reason = (
+            finish_reason_raw
+            if finish_reason_raw in {"stop", "length", "content_filter"}
+            else "error"
+        )
 
         return LLMResponse(
             content=content,

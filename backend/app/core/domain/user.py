@@ -1,19 +1,21 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class User(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     id: str = Field(description="Database identifier (Mongo ObjectId as string).")
-    microsoft_oid: str = Field(description="Microsoft Entra tenant-unique object id. Stable across logins.")
+    microsoft_oid: str = Field(
+        description="Microsoft Entra tenant-unique object id. Stable across logins."
+    )
     email: EmailStr
     display_name: str
     created_at: datetime

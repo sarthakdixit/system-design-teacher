@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
@@ -33,7 +33,7 @@ _SECONDS_PER_DAY = 24 * 60 * 60
 
 
 def _today_utc_string() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return datetime.now(UTC).strftime("%Y-%m-%d")
 
 
 def _user_key(microsoft_oid: str, action: RateLimitedAction, day: str) -> str:
@@ -138,6 +138,6 @@ class RateLimitService:
 
 
 def _seconds_until_utc_midnight() -> int:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     seconds_into_day = now.hour * 3600 + now.minute * 60 + now.second
     return _SECONDS_PER_DAY - seconds_into_day

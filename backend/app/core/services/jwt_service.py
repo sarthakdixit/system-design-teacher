@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -32,7 +32,7 @@ class JWTService:
         self._expiry = timedelta(hours=expiry_hours)
 
     def issue(self, *, microsoft_oid: str, email: str, display_name: str) -> str:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         claims = JWTClaims(
             sub=microsoft_oid,
             email=email,

@@ -38,8 +38,6 @@ async def health_deep(
 ) -> JSONResponse:
     report = await service.check_deep(environment=settings.environment)
     http_status = (
-        status.HTTP_200_OK
-        if report.status == "ok"
-        else status.HTTP_503_SERVICE_UNAVAILABLE
+        status.HTTP_200_OK if report.status == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
     )
     return JSONResponse(status_code=http_status, content=report.model_dump())

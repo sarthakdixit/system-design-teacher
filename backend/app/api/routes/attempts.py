@@ -94,9 +94,7 @@ def _design_result_to_response(result: SubmitDesignResult) -> SubmitDesignAttemp
 
 def _request_to_diagram(payload: SubmitDesignAttemptRequest) -> Diagram:
     return Diagram(
-        nodes=[
-            DiagramNode(id=n.id, type=n.type, label=n.label) for n in payload.diagram.nodes
-        ],
+        nodes=[DiagramNode(id=n.id, type=n.type, label=n.label) for n in payload.diagram.nodes],
         edges=[
             DiagramEdge(id=e.id, source_id=e.source_id, target_id=e.target_id)
             for e in payload.diagram.edges

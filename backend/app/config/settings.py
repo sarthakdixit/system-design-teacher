@@ -8,7 +8,6 @@ from typing import Literal
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
@@ -95,9 +94,7 @@ async def _hydrate_from_keyvault(settings: Settings) -> Settings:
     from app.adapters.azure.key_vault_secrets import KeyVaultSecretsProvider
 
     if not settings.azure_keyvault_url:
-        raise RuntimeError(
-            "AZURE_KEYVAULT_URL is required when ENVIRONMENT=azure but was not set"
-        )
+        raise RuntimeError("AZURE_KEYVAULT_URL is required when ENVIRONMENT=azure but was not set")
 
     provider = KeyVaultSecretsProvider(vault_url=settings.azure_keyvault_url)
     overrides: dict[str, str] = {}

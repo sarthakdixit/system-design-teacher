@@ -7,7 +7,6 @@ from app.api.deps import get_current_user
 from app.api.schemas.questions import (
     DesignQuestionResponse,
     FetchSituationQuestionResponse,
-    QuestionResponse,
     RateLimitMeta,
     SituationQuestionResponse,
 )
@@ -51,7 +50,9 @@ def _question_to_design_response(question: Question) -> DesignQuestionResponse:
     )
 
 
-def _result_to_fetch_response(result: FetchSituationQuestionResult) -> FetchSituationQuestionResponse:
+def _result_to_fetch_response(
+    result: FetchSituationQuestionResult,
+) -> FetchSituationQuestionResponse:
     return FetchSituationQuestionResponse(
         question=_question_to_situation_response(result.question),
         rate_limit=RateLimitMeta(

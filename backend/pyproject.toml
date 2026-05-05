@@ -86,6 +86,11 @@ ignore = [
     "E501",   # line length handled by formatter
     "B008",   # FastAPI `Depends(...)` in defaults is idiomatic
     "S101",   # asserts allowed in tests
+    "N818",   # exception suffix renaming (cosmetic)
+    "S110",   # try-except-pass for graceful KV degradation
+    "SIM105", # contextlib.suppress rewrite
+    "UP042",  # StrEnum recommendation
+    "RUF005", # iterable unpacking style
 ]
 
 [tool.ruff.lint.per-file-ignores]

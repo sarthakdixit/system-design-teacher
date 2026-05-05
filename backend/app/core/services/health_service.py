@@ -17,7 +17,6 @@ ComponentStatus = Literal["ok", "error"]
 
 
 class ComponentHealth(BaseModel):
-
     model_config = ConfigDict(frozen=True)
 
     status: ComponentStatus
@@ -25,7 +24,6 @@ class ComponentHealth(BaseModel):
 
 
 class DeepHealthReport(BaseModel):
-
     model_config = ConfigDict(frozen=True)
 
     status: ComponentStatus
@@ -34,7 +32,6 @@ class DeepHealthReport(BaseModel):
 
 
 class HealthService:
-
     def __init__(
         self,
         *,
@@ -86,13 +83,13 @@ class HealthService:
     async def _safe_check(
         self,
         name: str,
-        check: "asyncio.Future[bool] | object",
+        check: asyncio.Future[bool] | object,
     ) -> tuple[str, ComponentHealth]:
         try:
             ok: bool = await check()  # type: ignore[operator, misc]
             if ok:
                 return name, ComponentHealth(status="ok")
             return name, ComponentHealth(status="error", detail="health_check returned False")
-        except Exception as exc:  # noqa: BLE001 — health aggregator catches everything
+        except Exception as exc:
             self._telemetry.track_exception(exc, component=name)
             return name, ComponentHealth(status="error", detail=str(exc) or type(exc).__name__)

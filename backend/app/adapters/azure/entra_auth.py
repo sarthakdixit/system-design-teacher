@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -10,13 +10,12 @@ from jwt import PyJWKClient
 
 from app.core.ports.auth_provider import AuthenticatedUser, AuthError
 
-
 _JWKS_CACHE_TTL = timedelta(hours=1)
 _HTTPX_TIMEOUT = 10.0
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class EntraAuthProvider:
@@ -24,12 +23,8 @@ class EntraAuthProvider:
         self._tenant_id = tenant_id
         self._client_id = client_id
 
-        self._jwks_url = (
-            f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
-        )
-        self._issuer_specific = (
-            f"https://login.microsoftonline.com/{tenant_id}/v2.0"
-        )
+        self._jwks_url = f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
+        self._issuer_specific = f"https://login.microsoftonline.com/{tenant_id}/v2.0"
         self._jwks_client: PyJWKClient | None = None
         self._jwks_fetched_at: datetime | None = None
         self._jwks_lock = asyncio.Lock()
@@ -103,9 +98,7 @@ class EntraAuthProvider:
                     response = await http.get(self._jwks_url)
                     response.raise_for_status()
             except httpx.HTTPError as exc:
-                raise AuthError(
-                    f"Failed to fetch JWKS from Microsoft: {exc}"
-                ) from exc
+                raise AuthError(f"Failed to fetch JWKS from Microsoft: {exc}") from exc
 
             self._jwks_client = PyJWKClient(self._jwks_url, cache_keys=True)
             self._jwks_fetched_at = _utcnow()
@@ -124,8 +117,7 @@ class EntraAuthProvider:
             return
 
         raise AuthError(
-            f"Token issuer {issuer!r} does not match expected for tenant "
-            f"{self._tenant_id!r}"
+            f"Token issuer {issuer!r} does not match expected for tenant {self._tenant_id!r}"
         )
 
     def _claims_to_user(self, claims: dict[str, Any]) -> AuthenticatedUser:
@@ -133,11 +125,7 @@ class EntraAuthProvider:
         if not oid:
             raise AuthError("Token missing 'oid' claim")
 
-        email = (
-            claims.get("preferred_username")
-            or claims.get("email")
-            or claims.get("upn")
-        )
+        email = claims.get("preferred_username") or claims.get("email") or claims.get("upn")
         if not email:
             raise AuthError("Token missing email-like claim")
 

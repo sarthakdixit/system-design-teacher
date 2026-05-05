@@ -9,9 +9,7 @@ class CacheError(Exception):
 
 @runtime_checkable
 class Cache(Protocol):
-
-    async def get(self, key: str) -> str | None:
-        ...
+    async def get(self, key: str) -> str | None: ...
 
     async def set(
         self,
@@ -19,11 +17,9 @@ class Cache(Protocol):
         value: str,
         *,
         ttl_seconds: int | None = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    async def delete(self, key: str) -> bool:
-        ...
+    async def delete(self, key: str) -> bool: ...
 
     async def health_check(self) -> bool:
         ...

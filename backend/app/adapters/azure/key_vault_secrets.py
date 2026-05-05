@@ -13,7 +13,6 @@ from azure.keyvault.secrets.aio import SecretClient
 
 from app.core.ports.secrets_provider import SecretsProvider
 
-
 _VALID_SECRET_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
 
 
@@ -46,13 +45,9 @@ class KeyVaultSecretsProvider(SecretsProvider):
                     f"Secret {name!r} (Key Vault name {keyvault_name!r}) not found"
                 ) from exc
             except ClientAuthenticationError as exc:
-                raise SecretNotFoundError(
-                    f"Failed to authenticate to Key Vault: {exc}"
-                ) from exc
+                raise SecretNotFoundError(f"Failed to authenticate to Key Vault: {exc}") from exc
             except HttpResponseError as exc:
-                raise SecretNotFoundError(
-                    f"Failed to read secret {name!r}: {exc}"
-                ) from exc
+                raise SecretNotFoundError(f"Failed to read secret {name!r}: {exc}") from exc
 
             if secret.value is None:
                 raise SecretNotFoundError(f"Secret {name!r} has no value")
@@ -87,7 +82,5 @@ class KeyVaultSecretsProvider(SecretsProvider):
 
     def _to_keyvault_name(self, name: str) -> str:
         if not _VALID_SECRET_NAME.match(name):
-            raise ValueError(
-                f"Secret name {name!r} must match {_VALID_SECRET_NAME.pattern}"
-            )
+            raise ValueError(f"Secret name {name!r} must match {_VALID_SECRET_NAME.pattern}")
         return name.replace("_", "-").lower().replace("__", "-")
