@@ -47,6 +47,26 @@ def _make_cosmos_database(*, uri: str, db_name: str):
 
     return CosmosDatabase(uri=uri, db_name=db_name)
 
+def _make_rate_limit_configs(
+    *,
+    situation_user_daily: int,
+    situation_global_daily: int,
+    design_user_daily: int,
+    design_global_daily: int,
+):
+    from app.core.services.rate_limit_service import RateLimitConfig, RateLimitedAction
+
+    return {
+        RateLimitedAction.SITUATION_FETCH: RateLimitConfig(
+            per_user_daily=situation_user_daily,
+            global_daily=situation_global_daily,
+        ),
+        RateLimitedAction.DESIGN_SUBMISSION: RateLimitConfig(
+            per_user_daily=design_user_daily,
+            global_daily=design_global_daily,
+        ),
+    }
+
 
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
@@ -118,14 +138,19 @@ class Container(containers.DeclarativeContainer):
         expiry_hours=config.jwt_expiry_hours,
     )
 
+    rate_limit_configs = providers.Singleton(
+        _make_rate_limit_configs,
+        situation_user_daily=config.rate_limit_situation_daily,
+        situation_global_daily=config.global_cap_situation_daily,
+        design_user_daily=config.rate_limit_design_daily,
+        design_global_daily=config.global_cap_design_daily,
+    )
+
     rate_limit_service = providers.Factory(
         RateLimitService,
         rate_limiter=rate_limiter,
         telemetry=telemetry,
-        situation_daily=config.rate_limit_situation_daily,
-        design_daily=config.rate_limit_design_daily,
-        global_situation_daily=config.global_cap_situation_daily,
-        global_design_daily=config.global_cap_design_daily,
+        configs=rate_limit_configs,
     )
 
     auth_service = providers.Factory(
