@@ -6,7 +6,6 @@ from httpx import ASGITransport, AsyncClient
 from app.main import create_app
 
 
-@pytest.mark.integration
 async def test_health_shallow_returns_200() -> None:
     app = create_app()
     transport = ASGITransport(app=app)
