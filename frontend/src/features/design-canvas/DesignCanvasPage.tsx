@@ -64,7 +64,7 @@ export default function DesignCanvasPage() {
           "failed",
           `You've used today's submissions. Resets ${reset}.`,
         );
-        setRateLimit({ remaining: 0, limit: detail.userLimit });
+        setRateLimit({ remaining: 0, limit: detail.limit });
         return;
       }
       const message =
