@@ -2,7 +2,7 @@
 
 > A web platform for practicing system-design interviews. Drag components onto a canvas, submit your architecture, and get structured AI feedback in seconds.
 
-**Live demo**: https://zealous-cliff-07bce210f.7.azurestaticapps.net &nbsp;·&nbsp; **Walkthrough video**: see [`docs/DEMO_SCRIPT.md`](./docs/DEMO_SCRIPT.md) for the script (record your own from the live URL)
+**Live demo**: https://zealous-cliff-07bce210f.7.azurestaticapps.net
 
 ![Design canvas screenshot](./docs/screenshots/design-canvas.png)
 
