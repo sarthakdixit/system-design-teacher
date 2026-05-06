@@ -4,8 +4,6 @@
 
 **Live demo**: https://zealous-cliff-07bce210f.7.azurestaticapps.net
 
-![Design canvas screenshot](./docs/screenshots/design-canvas.png)
-
 ---
 
 ## What it does
@@ -149,15 +147,15 @@ system-design-teacher/
 
 ## Status & roadmap
 
-| Batch | Goal                                                         | Status             |
-| ----- | ------------------------------------------------------------ | ------------------ |
-| 1     | Foundation: ports, adapters, DI, health endpoint             | ✅ Done            |
-| 2     | Auth: MSAL + JWT, mock auth for local                        | ✅ Done            |
-| 3     | Situation practice mode + 50 seeded questions                | ✅ Done            |
-| 4     | Design canvas + AI feedback (the headline feature)           | ✅ Done            |
-| 5     | Azure migration + CI/CD                                      | ✅ Done            |
-| **6** | **Polish: README, edge labels, history, tests**              | **🚧 In progress** |
-| 7+    | Custom domain, frontend Lighthouse-in-CI, IaC for monitoring | future             |
+| Batch | Goal                                                         | Status  |
+| ----- | ------------------------------------------------------------ | ------- |
+| 1     | Foundation: ports, adapters, DI, health endpoint             | ✅ Done |
+| 2     | Auth: MSAL + JWT, mock auth for local                        | ✅ Done |
+| 3     | Situation practice mode + 50 seeded questions                | ✅ Done |
+| 4     | Design canvas + AI feedback (the headline feature)           | ✅ Done |
+| 5     | Azure migration + CI/CD                                      | ✅ Done |
+| **6** | **Polish: README, edge labels, history, tests**              | ✅ Done |
+| 7+    | Custom domain, frontend Lighthouse-in-CI, IaC for monitoring | future  |
 
 Architecture-relevant decisions are captured as ADRs in [`docs/adr/`](./docs/adr/):
 
