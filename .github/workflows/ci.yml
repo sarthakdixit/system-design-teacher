@@ -65,8 +65,7 @@ jobs:
 
       - name: Typecheck with mypy
         working-directory: backend
-        run: mypy app/
-        continue-on-error: true
+        run: mypy app/core/ --cache-dir /tmp/.mypy_cache
 
       - name: Run tests
         working-directory: backend
@@ -119,6 +118,10 @@ jobs:
           VITE_MICROSOFT_CLIENT_ID: ci-client-id
           VITE_MICROSOFT_TENANT_ID: common
         run: npm run build
+
+      - name: Run unit tests
+        working-directory: frontend
+        run: npm run test:run
 
   bicep:
     name: Bicep validation

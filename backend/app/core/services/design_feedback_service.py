@@ -12,6 +12,7 @@ from app.core.domain.errors import DomainError
 from app.core.ports.database import Database, NotFoundError
 from app.core.ports.llm_provider import (
     LLMMessage,
+    LLMModel,
     LLMProvider,
     LLMValidationError,
 )
@@ -24,7 +25,7 @@ from app.core.services.rate_limit_service import (
 )
 
 _DEFAULT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "design_feedback.md"
-_DEFAULT_MODEL = "gpt-4o"
+_DEFAULT_MODEL: LLMModel = "gpt-4o"
 _DEFAULT_TEMPERATURE = 0.3
 
 
@@ -56,7 +57,7 @@ class DesignFeedbackService:
         telemetry: Telemetry,
         cache_ttl_days: int,
         prompt_path: Path | None = None,
-        model: str = _DEFAULT_MODEL,
+        model: LLMModel = _DEFAULT_MODEL,
     ) -> None:
         self._database = database
         self._llm = llm_provider

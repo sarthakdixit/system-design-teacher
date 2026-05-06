@@ -86,7 +86,7 @@ class HealthService:
         check: asyncio.Future[bool] | object,
     ) -> tuple[str, ComponentHealth]:
         try:
-            ok: bool = await check()  # type: ignore[operator, misc]
+            ok: bool = await check()  # type: ignore[operator]
             if ok:
                 return name, ComponentHealth(status="ok")
             return name, ComponentHealth(status="error", detail="health_check returned False")

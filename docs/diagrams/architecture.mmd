@@ -1,0 +1,57 @@
+%%{init: {'theme': 'default', 'themeVariables': {'fontFamily': 'Arial', 'fontSize': '13px', 'primaryColor': '#f1faee', 'primaryTextColor': '#1d3557', 'primaryBorderColor': '#1d3557', 'lineColor': '#457b9d', 'secondaryColor': '#a8dadc', 'tertiaryColor': '#fff'}}}%%
+graph TB
+    subgraph CLIENT["Client (Browser)"]
+        UI[React SPA<br/>+ React Flow Canvas<br/>+ MSAL.js]
+    end
+
+    subgraph AZURE["Azure (eastus2)"]
+        SWA[Static Web App<br/>swa-sdt-sks]
+        CA[Container App<br/>ca-sdt-sks<br/>FastAPI + uvicorn]
+
+        subgraph DATA["Data layer"]
+            COSMOS[(Cosmos DB<br/>Mongo API<br/>5 collections)]
+        end
+
+        subgraph SECURITY["Security & Identity"]
+            KV[Key Vault<br/>kv-sdt-sks<br/>5 secrets]
+            ENTRA[Microsoft Entra ID<br/>App registration]
+        end
+
+        subgraph OBSERVE["Observability"]
+            INSIGHTS[App Insights<br/>+ Log Analytics]
+        end
+    end
+
+    subgraph EXTERNAL["External services"]
+        OPENAI[OpenAI API<br/>gpt-4o + gpt-4o-mini]
+        MS[Microsoft<br/>login.microsoftonline.com]
+    end
+
+    subgraph CICD["CI/CD"]
+        GH[GitHub Actions<br/>3 workflows]
+        DH[Docker Hub<br/>srthkdixit/sdt-backend]
+    end
+
+    UI -->|Static assets| SWA
+    UI -->|HTTPS + JWT| CA
+    UI -.->|OAuth flow| MS
+
+    CA -->|Mongo wire protocol<br/>SSL + replicaSet| COSMOS
+    CA -->|Managed Identity<br/>Secrets User role| KV
+    CA -->|JWKS fetch| ENTRA
+    CA -->|HTTPS| OPENAI
+    CA -.->|OpenTelemetry<br/>auto-instrumented| INSIGHTS
+
+    GH -->|docker push| DH
+    GH -->|az containerapp update| CA
+    GH -->|deploy artifact| SWA
+
+    classDef azureBox fill:#a8dadc,stroke:#1d3557,stroke-width:2px,color:#1d3557
+    classDef externalBox fill:#fff,stroke:#e63946,stroke-width:2px,color:#1d3557
+    classDef cicdBox fill:#f1faee,stroke:#457b9d,stroke-width:2px,color:#1d3557
+    classDef clientBox fill:#fff,stroke:#1d3557,stroke-width:2px,color:#1d3557
+
+    class SWA,CA,COSMOS,KV,ENTRA,INSIGHTS azureBox
+    class OPENAI,MS externalBox
+    class GH,DH cicdBox
+    class UI clientBox
