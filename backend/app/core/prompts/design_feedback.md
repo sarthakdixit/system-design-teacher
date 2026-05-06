@@ -30,6 +30,10 @@ Before writing any feedback, do these three checks:
 
 Example trap: an API Gateway connects to both "Auth Service" and "Redirect Service." This does NOT mean Auth is on the redirect path. It means the gateway has two separate destinations. To determine if a request flow includes auth, follow the edges from the entry point all the way to the data store and check whether `Auth Service` is on that specific path.
 
+**2b. When an edge has a label, use it as the source of truth.** Edges may carry an optional `label` field (e.g., "redirect path", "write path", "async telemetry"). When present, treat the label as the candidate's explicit statement of what that edge represents — do not infer something different from structure alone. If a label says "redirect path" and the path goes through Auth Service, that IS what the candidate intended (and you may flag it). If a label says "telemetry" on an edge to Analytics, do not treat that as part of the synchronous request path.
+
+When edges are unlabeled, fall back to inference based on node types and topology, as before.
+
 **3. Distinguish read paths from write paths.** Read-heavy systems (URL shorteners, social feeds, search) usually have:
 
 - A read path that bypasses auth: `User → Gateway → Cache → DB` (anonymous, fast).

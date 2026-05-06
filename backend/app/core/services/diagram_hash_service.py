@@ -52,13 +52,14 @@ class DiagramHashService:
             "source_label": source.label.strip().lower() if source else "",
             "target_type": target.type if target else "unknown",
             "target_label": target.label.strip().lower() if target else "",
+            "edge_label": edge.label.strip().lower() if edge.label else "",
         }
 
     def _edge_sort_key(
         self,
         edge: DiagramEdge,
         node_lookup: dict[str, DiagramNode],
-    ) -> tuple[str, str, str, str]:
+    ) -> tuple[str, str, str, str, str]:
         source = node_lookup.get(edge.source_id)
         target = node_lookup.get(edge.target_id)
         return (
@@ -66,4 +67,5 @@ class DiagramHashService:
             source.label.strip().lower() if source else "",
             target.type if target else "unknown",
             target.label.strip().lower() if target else "",
+            edge.label.strip().lower() if edge.label else "",
         )

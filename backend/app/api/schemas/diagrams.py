@@ -43,6 +43,7 @@ class DiagramEdgeDTO(BaseModel):
     id: str = Field(min_length=1, max_length=100)
     source_id: str = Field(min_length=1, max_length=100)
     target_id: str = Field(min_length=1, max_length=100)
+    label: str | None = Field(default=None, max_length=MAX_LABEL_LENGTH)
 
 
 class DiagramDTO(BaseModel):

@@ -45,13 +45,13 @@ async def test_health_deep_reports_every_component_ok() -> None:
     )
 
     for name, component in body["components"].items():
-        assert component["status"] == "ok", (
-            f"Component {name!r} is not healthy: {component}"
-        )
+        assert component["status"] == "ok", f"Component {name!r} is not healthy: {component}"
 
 
 @pytest.mark.integration
-async def test_health_deep_returns_503_when_a_component_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_health_deep_returns_503_when_a_component_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("MONGO_URI", "mongodb://127.0.0.1:1")
     from app.config.settings import get_settings
 
@@ -64,7 +64,9 @@ async def test_health_deep_returns_503_when_a_component_fails(monkeypatch: pytes
             response = await client.get("/health/deep")
 
         body = response.json()
-        assert response.status_code == 503, f"Expected 503, got {response.status_code}. Body: {body}"
+        assert response.status_code == 503, (
+            f"Expected 503, got {response.status_code}. Body: {body}"
+        )
         assert body["status"] == "error"
         assert body["components"]["database"]["status"] == "error"
     finally:
