@@ -20,6 +20,7 @@ export function useDiagramExport() {
         id: edge.id,
         sourceId: edge.source,
         targetId: edge.target,
+        label: typeof edge.label === "string" ? edge.label : null,
       }));
 
       const trimmedNotes = params.userNotes.trim();

@@ -37,6 +37,7 @@ export async function submitDesign(payload: SubmitDesignPayload): Promise<Submit
         id: e.id,
         source_id: e.sourceId,
         target_id: e.targetId,
+        label: e.label,
       })),
     },
     user_notes: payload.userNotes,

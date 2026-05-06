@@ -95,7 +95,7 @@ export type SubmitDesignPayload = {
   questionId: string;
   diagram: {
     nodes: { id: string; type: ComponentType; label: string }[];
-    edges: { id: string; sourceId: string; targetId: string }[];
+    edges: { id: string; sourceId: string; targetId: string; label: string | null }[];
   };
   userNotes: string | null;
 };
