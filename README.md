@@ -176,7 +176,7 @@ For deploying to Azure: [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md).
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+Apache — see [LICENSE](./LICENSE).
 
 ---
 
